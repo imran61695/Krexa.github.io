@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Krexa - E-commerce Demo</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      background: #f0f0f0;
+      color: #333;
+      transition: background 0.3s, color 0.3s;
+    }
+    header {
+      background: #4CAF50;
+      color: white;
+      padding: 15px;
+      text-align: center;
+      font-size: 24px;
+    }
+    .dark-mode {
+      background: #1e1e1e;
+      color: #f5f5f5;
+    }
+    .container {
+      max-width: 900px;
+      margin: 20px auto;
+      padding: 20px;
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+    .product {
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      padding: 10px;
+      margin: 10px 0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .product img {
+      width: 60px;
+      height: 60px;
+      object-fit: cover;
+      margin-right: 15px;
+      border-radius: 5px;
+    }
+    .cart {
+      margin-top: 20px;
+      border-top: 2px solid #4CAF50;
+      padding-top: 15px;
+    }
+    button {
+      padding: 5px 10px;
+      margin: 5px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    .btn-primary { background: #4CAF50; color: white; }
+    .btn-danger { background: #f44336; color: white; }
+    .btn-secondary { background: #008CBA; color: white; }
+    footer {
+      margin-top: 40px;
+      padding: 10px;
+      background: #333;
+      color: white;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    🛒 Krexa - আপনার অনলাইন শপ
+    <button onclick="toggleDarkMode()" style="float:right; margin-top:-5px;">🌙/☀️</button>
+  </header>
+
+  <div class="container">
+    <h2>প্রোডাক্ট লিস্ট</h2>
+    <input type="text" id="search" placeholder="প্রোডাক্ট খুঁজুন..." onkeyup="renderProducts()">
+
+    <div id="product-list"></div>
+
+    <div class="cart">
+      <h3>🛒 কার্ট</h3>
+      <div id="cart-items"></div>
+      <p>Subtotal: <span id="subtotal">0</span> টাকা</p>
+      <p>Delivery: <span id="delivery">0</span> টাকা</p>
+      <p><strong>Total: <span id="total">0</span> টাকা</strong></p>
+      <button class="btn-secondary" onclick="watchAd()">🎥 Ad দেখুন (Free Delivery)</button>
+      <button class="btn-primary" onclick="checkout()">Checkout</button>
+      <button class="btn-danger" onclick="smsOrder()">📩 SMS Order</button>
+    </div>
+  </div>
+
+  <footer>
+    © ২০২৫ Krexa - সর্বস্বত্ব সংরক্ষিত
+  </footer>
+
+<script>
+  const PRODUCTS = [
+    {id:1, name:"টি-শার্ট", price:300, img:"https://via.placeholder.com/60?text=T-Shirt"},
+    {id:2, name:"জুতা", price:1200, img:"https://via.placeholder.com/60?text=Shoes"},
+    {id:3, name:"হেডফোন", price:800, img:"https://via.placeholder.com/60?text=Headphone"},
+    {id:4, name:"ঘড়ি", price:1500, img:"https://via.placeholder.com/60?text=Watch"}
+  ];
+
+  let CART = [];
+  let freeDelivery = false;
+
+  function renderProducts(){
+    const list = document.getElementById('product-list');
+    const search = document.getElementById('search').value.toLowerCase();
+    list.innerHTML = '';
+    PRODUCTS.filter(p=>p.name.toLowerCase().includes(search)).forEach(p=>{
+      list.innerHTML += `<div class='product'>
+        <div><img src='${p.img}' alt='${p.name}'><strong>${p.name}</strong> - ${p.price} টাকা</div>
+        <button class='btn-primary' onclick='addToCart(${p.id})'>Add to Cart</button>
+      </div>`;
+    });
+  }
+
+  function addToCart(id){
+    const product = PRODUCTS.find(p=>p.id===id);
+    const item = CART.find(i=>i.id===id);
+    if(item){ item.qty++; }
+    else { CART.push({...product, qty:1}); }
+    renderCart();
+  }
+
+  function renderCart(){
+    const cartDiv = document.getElementById('cart-items');
+    cartDiv.innerHTML = '';
+    let subtotal = 0;
+    CART.forEach(item=>{
+      subtotal += item.price * item.qty;
+      cartDiv.innerHTML += `<div>
+        ${item.name} x ${item.qty} = ${item.price*item.qty} টাকা
+        <button class='btn-secondary' onclick='increaseQty(${item.id})'>+</button>
+        <button class='btn-secondary' onclick='decreaseQty(${item.id})'>-</button>
+        <button class='btn-danger' onclick='removeFromCart(${item.id})'>Remove</button>
+      </div>`;
+    });
+
+    document.getElementById('subtotal').innerText = subtotal;
+    let delivery = freeDelivery ? 0 : (subtotal>0?50:0);
+    document.getElementById('delivery').innerText = delivery;
+    document.getElementById('total').innerText = subtotal+delivery;
+  }
+
+  function increaseQty(id){
+    const item = CART.find(i=>i.id===id);
+    if(item){item.qty++;}
+    renderCart();
+  }
+  function decreaseQty(id){
+    const item = CART.find(i=>i.id===id);
+    if(item && item.qty>1){item.qty--;}
+    renderCart();
+  }
+  function removeFromCart(id){
+    CART = CART.filter(i=>i.id!==id);
+    renderCart();
+  }
+
+  function watchAd(){
+    alert("Ad দেখা শুরু... 15 সেকেন্ড অপেক্ষা করুন");
+    setTimeout(()=>{
+      freeDelivery = true;
+      alert("আপনি Ad দেখেছেন 🎉 Delivery Charge Free!");
+      renderCart();
+    },15000);
+  }
+
+  function checkout(){
+    if(CART.length===0){alert("কার্ট খালি!");return;}
+    alert("ধন্যবাদ! আপনার অর্ডার সাবমিট হয়েছে (ডেমো)");
+  }
+
+  function smsOrder(){
+    if(CART.length===0){alert("কার্ট খালি!");return;}
+    alert("SMS Order ফিচার এখন ডেমো মোডে আছে। এখানে আসল SMS API যুক্ত করতে হবে।");
+  }
+
+  function toggleDarkMode(){
+    document.body.classList.toggle('dark-mode');
+  }
+
+  renderProducts();
+</script>
+</body>
+</html>
